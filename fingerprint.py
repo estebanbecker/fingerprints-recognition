@@ -46,12 +46,13 @@ sift_pred=[]
 orb_test=[]
 orb_pred=[]
 
-for descriptor in features_suspects:
+good_matches=[]
 
-    
+for descriptor in features_suspects:
 
     for base in features_base:
 
+        match=sift_matcher.knnMatch(np.array(features_suspects))
 
 
 

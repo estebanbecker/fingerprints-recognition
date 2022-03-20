@@ -5,9 +5,10 @@ from cv2 import NORM_HAMMING
 import numpy as np
 from os.path import join
 from os import listdir
-from matplotlib import pyplot as plt
+from sklearn.metrics import classification_report as report
 
 
+print("Preparing data...")
 
 filename_list = [f for f in listdir('DB') if isfile(join('DB',f))]
 
@@ -20,11 +21,11 @@ for filename in filename_list:
     image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
     sift=cv.SIFT_create()
-    sift_des=sift.detect(image,None)
+    sift_des=sift.detectAndCompute(image,None)
+
 
     orb = cv.ORB_create()
-    orb_des = orb.detect(image,None)
-    orb_des, des = orb.compute(image, orb_des)
+    orb_des = orb.detectAndCompute(image,None)
 
 
     feat_dict = {'sift': sift_des, 'orb': orb_des}
@@ -46,16 +47,50 @@ sift_pred=[]
 orb_test=[]
 orb_pred=[]
 
-good_matches=[]
+i=0
+
 
 for descriptor in features_suspects:
+    i+=1
+
+    print("Analysing image: "+str(i)+"/"+str(len(features_suspects)))
+
+    match_len = {}
 
     for base in features_base:
 
-        match=sift_matcher.knnMatch(np.array(features_suspects))
+        sift_match=sift_matcher.knnMatch(features_suspects[descriptor]['sift'][1],features_base[base]['sift'][1],k=2)
+
+        good_match=[]
+
+        for m,n in sift_match:   
+            if m.distance < 0.75*n.distance:
+                good_match.append(m)
+        
+        match_len[base]=len(good_match)
+
+    sift_pred.append(max(match_len, key=match_len.get))
+    sift_test.append(descriptor.split('_')[0])
+
+    #Dooing the same but with ORB
+
+    match_len = {}
+
+    for base in features_base:
+
+        orb_match=orb_matcher.knnMatch(features_suspects[descriptor]['orb'][1],features_base[base]['orb'][1],k=2)
+
+        good_match=[]
+
+        for m,n in orb_match:   
+            if m.distance < 0.75*n.distance:
+                good_match.append(m)
+        
+        match_len[base]=len(good_match)
+
+    orb_pred.append(max(match_len, key=match_len.get))
+    orb_test.append(descriptor.split('_')[0])
 
 
-
-
-
-
+print(report(sift_test,sift_pred))
+print(report(orb_test,orb_pred))

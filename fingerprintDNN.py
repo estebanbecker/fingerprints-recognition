@@ -164,7 +164,7 @@ def visualize_model(model, num_images=6):
                     return
         model.train(mode=was_training)
 
-model_ft = models.resnet18(pretrained=True)
+model_ft = models.resnet50(pretrained=True)
 num_ftrs = model_ft.fc.in_features
 # Here the size of each output sample is set to 2.
 # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
@@ -184,7 +184,7 @@ model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_
 
 visualize_model(model_ft)
 
-model_conv = torchvision.models.resnet18(pretrained=True)
+model_conv = torchvision.models.resnet50(pretrained=True)
 for param in model_conv.parameters():
     param.requires_grad = False
 

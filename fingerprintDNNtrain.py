@@ -52,7 +52,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Get a batch of training data
 inputs, classes = next(iter(dataloaders['train']))
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs=1):
+def train_model(model, criterion, optimizer, scheduler, num_epochs = 25):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -139,7 +139,7 @@ optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
 # Decay LR by a factor of 0.1 every 7 epochs
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-model_conv = train_model(model_conv, criterion, optimizer_conv, exp_lr_scheduler, num_epochs=1)
+model_conv = train_model(model_conv, criterion, optimizer_conv, exp_lr_scheduler, num_epochs = 25)
 
 torch.save(model_conv, 'model_conv.pt')
 

@@ -70,7 +70,7 @@ out = torchvision.utils.make_grid(inputs)
 
 imshow(out, title=[class_names[x] for x in classes])
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+def train_model(model, criterion, optimizer, scheduler, num_epochs=1):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -180,7 +180,7 @@ optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
 # Decay LR by a factor of 0.1 every 7 epochs
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=25)
+model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=1)
 
 visualize_model(model_ft)
 
@@ -203,9 +203,12 @@ optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
 # Decay LR by a factor of 0.1 every 7 epochs
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-model_conv = train_model(model_conv, criterion, optimizer_conv, exp_lr_scheduler, num_epochs=25)
+model_conv = train_model(model_conv, criterion, optimizer_conv, exp_lr_scheduler, num_epochs=1)
 
 visualize_model(model_conv)
+
+torch.save(model_ft, 'model_ft.pth')
+torch.save(model_conv, 'model_conv.pth')
 
 plt.ioff()
 plt.show()

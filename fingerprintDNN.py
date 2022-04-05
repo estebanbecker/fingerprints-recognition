@@ -12,8 +12,9 @@ import matplotlib.pyplot as plt
 import time
 from os import listdir
 import os
-import copy
 import PIL
+
+print("Final test")
 
 model_conv = torch.load('model_conv.pt')
 

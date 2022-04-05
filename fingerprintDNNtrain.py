@@ -13,11 +13,19 @@ import torchvision
 from torchvision import datasets, models, transforms
 import matplotlib.pyplot as plt
 import time
+from os import listdir
 import os
 import copy
 
 cudnn.benchmark = True
 plt.ion()   # interactive mode
+
+def loss_function(output , labels , model):
+    EntropyLoss = nn.CrossEntropyLoss()
+    L_class = EntropyLoss(output, labels)
+    Norm = torch.norm(model.fc.weight)
+
+    return 0.5*Norm+L_class
 
 # Data augmentation and normalization for training
 # Just normalization for validation
@@ -27,7 +35,8 @@ data_transforms = {
         transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        transforms.RandomAffine(5,translate=(0.2,0.2),scale=(0.9,1.1))
+        #transforms.RandomAffine(5,translate=(0.2,0.2),scale=(0.9,1.1)),
+
     ]),
     'val': transforms.Compose([
         transforms.Resize(256),
@@ -52,7 +61,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Get a batch of training data
 inputs, classes = next(iter(dataloaders['train']))
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs = 25):
+def train_model(model, criterion, optimizer, scheduler, num_epochs):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -85,7 +94,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs = 25):
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
                     _, preds = torch.max(outputs, 1)
-                    loss = criterion(outputs, labels)
+                    loss = criterion(outputs, labels, model)
 
                     # backward + optimize only if in training phase
                     if phase == 'train':
@@ -104,6 +113,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs = 25):
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
 
+
             # deep copy the model
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
@@ -121,6 +131,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs = 25):
     return model
 
 model_conv = torchvision.models.resnet50(pretrained=True)
+
 for param in model_conv.parameters():
     param.requires_grad = False
 
@@ -130,7 +141,7 @@ model_conv.fc = nn.Linear(num_ftrs, len(class_names))
 
 model_conv = model_conv.to(device)
 
-criterion = nn.CrossEntropyLoss()
+criterion = loss_function
 
 # Observe that only parameters of final layer are being optimized as
 # opposed to before.
@@ -143,5 +154,42 @@ model_conv = train_model(model_conv, criterion, optimizer_conv, exp_lr_scheduler
 
 torch.save(model_conv, 'model_conv.pt')
 
-plt.ioff()
-plt.show()
+import os
+import PIL
+
+print("Final test")
+
+model_conv = torch.load('model_conv.pt')
+
+
+
+model_conv.eval()
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+data_dir='fvc2000_final_test'
+
+class_names = [x for x in range(0,10)]
+
+score=0
+
+for img in listdir(data_dir):
+    img_path = os.path.join(data_dir, img)
+    img = PIL.Image.open(img_path)
+    img = img.convert('RGB')
+    img = transforms.Resize(256)(img)
+    img = transforms.CenterCrop(224)(img)
+    img = transforms.ToTensor()(img)
+    img = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(img)
+    img = img.float()
+    img = img.unsqueeze(0)
+    img = img.to(device)
+    outputs = model_conv(img)
+    _, predicted = torch.max(outputs, 1)
+
+    if(class_names[predicted.item()]==int(img_path[-5])):
+        score+=1
+    print("Predicted: ", class_names[predicted.item()], "Actual: ", img_path[-5])
+print("Accuracy:",score/len(listdir(data_dir)))
+    
+
